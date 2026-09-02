@@ -1,0 +1,6 @@
+'use client';
+import {useEffect,useState} from 'react';
+import Link from 'next/link';
+import CustomerShell from '../../components/CustomerShell';
+const api=process.env.NEXT_PUBLIC_API_URL||'http://localhost:8000/api/v1';
+export default function Orders(){const [items,setItems]=useState<any[]|null>(null);const token=typeof window==='undefined'?'':sessionStorage.getItem('medicii_access_token');useEffect(()=>{fetch(api+'/orders',{headers:{Authorization:'Bearer '+token}}).then(r=>r.ok?r.json():[]).then(setItems)},[token]);return <CustomerShell title="My orders">{!items?<p>Loading your orders…</p>:<div className="table"><div className="table-head"><span>Order</span><span>Medicines</span><span>Status</span><span>Total</span></div>{items.map(x=><div className="table-row" key={x.id}><b><Link href={'/orders/'+x.id}>{x.number}</Link><small>{new Date(x.created_at).toLocaleDateString()}</small></b><span>{x.items.map((i:any)=>`${i.medicine} × ${i.quantity}`).join(', ')}</span><span className="badge">{x.status.replaceAll('_',' ')}</span><span>${x.total}{['DRAFT','AWAITING_DOCUMENTS','READY_FOR_PAYMENT'].includes(x.status)&&<Link className="small-action" href="/checkout">Continue</Link>}</span></div>)}{!items.length&&<p className="empty">No orders yet. <Link href="/quotes">Review your quotes</Link> to begin.</p>}</div>}</CustomerShell>}

@@ -1,0 +1,11 @@
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Local runtime artifacts
+__pycache__/
+*.py[cod]
+.next/
+node_modules/
+uploads/

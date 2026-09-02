@@ -1,0 +1,1 @@
+import CustomerShell from './CustomerShell'; export default function CustomerEmpty({title,children}:{title:string;children:React.ReactNode}){return <CustomerShell title={title}><section className="empty-card">{children}</section></CustomerShell>}

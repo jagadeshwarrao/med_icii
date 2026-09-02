@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-medicii}
+      POSTGRES_USER: ${POSTGRES_USER:-medicii}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-development_only_change_me}
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U medicii -d medicii"], interval: 5s, timeout: 5s, retries: 10 }
+    volumes: [postgres-data:/var/lib/postgresql/data]
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: "${DATABASE_URL:-postgresql+psycopg://medicii:development_only_change_me@db:5432/medicii}"
+      JWT_SECRET: ${JWT_SECRET:-development-secret-change-before-deploy}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      STRIPE_TAX_ENABLED: ${STRIPE_TAX_ENABLED:-false}
+      STRIPE_INVOICE_CREATION_ENABLED: ${STRIPE_INVOICE_CREATION_ENABLED:-true}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@medicii.net}
+      ORDERS_EMAIL: ${ORDERS_EMAIL:-orders@medicii.net}
+      ADMIN_NOTIFICATION_EMAIL: ${ADMIN_NOTIFICATION_EMAIL:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      GRAPH_TENANT_ID: ${GRAPH_TENANT_ID:-}
+      GRAPH_CLIENT_ID: ${GRAPH_CLIENT_ID:-}
+      GRAPH_CLIENT_SECRET: ${GRAPH_CLIENT_SECRET:-}
+      GRAPH_SENDER: ${GRAPH_SENDER:-noreply@medicii.net}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+    depends_on: { db: { condition: service_healthy } }
+    ports: ["8000:8000"]
+  web:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}"
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+    depends_on: [api]
+    ports: ["3000:3000"]
+volumes: { postgres-data: {} }

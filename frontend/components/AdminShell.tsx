@@ -1,0 +1,6 @@
+'use client';
+import Link from 'next/link';
+import {useEffect} from 'react';
+import {usePathname,useRouter} from 'next/navigation';
+const links=[['/admin','Dashboard'],['/admin/quote-requests','Quote Requests'],['/admin/reviewed-quotes','Reviewed Quotes'],['/admin/orders','Orders'],['/admin/customers','Customers'],['/admin/documents','Documents'],['/admin/payments','Payments'],['/admin/audit-logs','Audit Logs']];
+export default function AdminShell({title,description,children}:{title:string;description:string;children:React.ReactNode}){const path=usePathname(),router=useRouter();useEffect(()=>{if(sessionStorage.getItem('medicii_role')!=='ADMIN')router.replace('/admin/login');},[router]);function logout(){sessionStorage.clear();router.replace('/admin/login');}return <main className="admin-shell"><aside><b><i>✦</i> medicii <small>Operations</small></b><nav>{links.map(([href,label])=><Link className={path===href?'selected':''} href={href} key={href}>{label}</Link>)}</nav><button className="ghost" onClick={logout}>Log out</button></aside><section className="admin-content"><header><p className="eyebrow">MEDICII OPERATIONS</p><h1>{title}</h1><p>{description}</p></header>{children}</section></main>}

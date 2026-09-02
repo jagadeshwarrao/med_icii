@@ -1,0 +1,2 @@
+import Link from 'next/link';
+export default function InfoPage({eyebrow,title,children}:{eyebrow:string;title:string;children:React.ReactNode}){return <main className="info-page"><nav className="landing-nav"><Link className="brand" href="/"><i>✦</i> medicii</Link><Link className="ghost link-button" href="/">← Back to home</Link></nav><header><p className="eyebrow">{eyebrow}</p><h1>{title}</h1></header>{children}<footer>Medicii is a technology platform. Information on this page is general only and not medical, legal, or regulatory advice.</footer></main>}

@@ -1,0 +1,1 @@
+import CustomerEmpty from '../../components/CustomerEmpty'; export default function Documents(){return <CustomerEmpty title="Documents"><p className="eyebrow">DOCUMENTS</p><h2>Secure document handling</h2><p>Required prescription and government-ID PDFs are requested only during checkout and are not publicly accessible.</p></CustomerEmpty>}

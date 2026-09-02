@@ -1,0 +1,33 @@
+services:
+  apply-profile-migration:
+    image: postgres:16-alpine
+    environment:
+      TARGET_DATABASE_URL: ${SUPABASE_POOLER_DATABASE_URL:?Set SUPABASE_POOLER_DATABASE_URL in .env first}
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        target_url=$$(printf '%s' "$$TARGET_DATABASE_URL" | sed 's|^postgresql+psycopg://|postgresql://|')
+        psql "$$target_url" -v ON_ERROR_STOP=1 -c 'ALTER TABLE users ADD COLUMN IF NOT EXISTS phone varchar; ALTER TABLE users ADD COLUMN IF NOT EXISTS address jsonb;'
+  apply-agreement-migration:
+    image: postgres:16-alpine
+    environment:
+      TARGET_DATABASE_URL: ${SUPABASE_POOLER_DATABASE_URL:?Set SUPABASE_POOLER_DATABASE_URL in .env first}
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        target_url=$$(printf '%s' "$$TARGET_DATABASE_URL" | sed 's|^postgresql+psycopg://|postgresql://|')
+        psql "$$target_url" -v ON_ERROR_STOP=1 -c 'ALTER TABLE users ADD COLUMN IF NOT EXISTS agreement_version varchar; ALTER TABLE users ADD COLUMN IF NOT EXISTS agreement_accepted_at timestamp;'
+  migrate-local-data:
+    image: postgres:16-alpine
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-development_only_change_me}
+      TARGET_DATABASE_URL: ${SUPABASE_POOLER_DATABASE_URL:?Set SUPABASE_POOLER_DATABASE_URL in .env first}
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        target_url=$$(printf '%s' "$$TARGET_DATABASE_URL" | sed 's|^postgresql+psycopg://|postgresql://|')
+        psql "$$target_url" -v ON_ERROR_STOP=1 -c 'TRUNCATE TABLE password_reset_tokens, audit_events, documents, order_items, payments, webhook_events, quote_group_quotes, quote_group_requests, orders, quotes, quote_requests, quote_groups, users CASCADE;'
+        pg_dump --host=db --username=medicii --dbname=medicii --data-only --inserts --no-owner --no-privileges | psql "$$target_url" -v ON_ERROR_STOP=1
