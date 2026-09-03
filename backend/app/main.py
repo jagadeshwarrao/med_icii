@@ -18,8 +18,21 @@ app.add_middleware(CORSMiddleware,allow_origins=os.getenv('CORS_ORIGINS','http:/
 def start():
  Base.metadata.create_all(engine)
  db=next(db_session())
- if not db.scalar(select(User).where(User.email=='admin@medicii.example.com')):
-  db.add(User(email='admin@medicii.example.com',full_name='Medicii Operations',password_hash=hash_password('ChangeMe123!'),role='ADMIN',verified_at=datetime.utcnow())); db.commit()
+ production=os.getenv('ENVIRONMENT','development').lower()=='production'
+ demo_admin=db.scalar(select(User).where(User.email=='admin@medicii.example.com'))
+ if not production and not demo_admin:
+  db.add(User(email='admin@medicii.example.com',full_name='Medicii Operations',password_hash=hash_password('ChangeMe123!'),role='ADMIN',verified_at=datetime.utcnow()))
+ if production and demo_admin:
+  demo_admin.password_hash=hash_password(secrets.token_urlsafe(48)); demo_admin.role='DISABLED'
+ bootstrap_email=os.getenv('INITIAL_ADMIN_EMAIL','').strip().lower()
+ bootstrap_password=os.getenv('INITIAL_ADMIN_PASSWORD','')
+ if production and bootstrap_email and len(bootstrap_password)>=12:
+  bootstrap_admin=db.scalar(select(User).where(User.email==bootstrap_email))
+  if not bootstrap_admin:
+   db.add(User(email=bootstrap_email,full_name='Medicii Operations',password_hash=hash_password(bootstrap_password),role='ADMIN',verified_at=datetime.utcnow()))
+  elif bootstrap_admin.role!='ADMIN':
+   bootstrap_admin.role='ADMIN'
+ db.commit()
 class Register(BaseModel): full_name:str; email:EmailStr; password:str=Field(min_length=12); agreement_accepted:bool=False
 class Login(BaseModel): email:EmailStr; password:str
 class ForgotPassword(BaseModel): email:EmailStr
@@ -86,7 +99,7 @@ def register(data:Register,db:Session=Depends(db_session)):
 @app.post('/api/v1/auth/login')
 def login(data:Login,db:Session=Depends(db_session)):
  u=db.scalar(select(User).where(User.email==data.email.lower()))
- if not u or not verify_password(data.password,u.password_hash): audit(db,u,'AUTH_LOGIN','user',getattr(u,'id','unknown'),False); db.commit(); raise HTTPException(401,'Invalid credentials')
+ if not u or u.role not in ('CUSTOMER','ADMIN','PHARMACY') or not verify_password(data.password,u.password_hash): audit(db,u,'AUTH_LOGIN','user',getattr(u,'id','unknown'),False); db.commit(); raise HTTPException(401,'Invalid credentials')
  audit(db,u,'AUTH_LOGIN','user',u.id); db.commit(); return {'access_token':token_for(u),'role':u.role,'user':{'name':u.full_name,'email':u.email}}
 @app.post('/api/v1/auth/forgot-password')
 def forgot_password(data:ForgotPassword,db:Session=Depends(db_session)):
